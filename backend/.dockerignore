@@ -1,0 +1,39 @@
+# Docker ignore patterns are NOT recursive by default. `filepath.Match` semantics mean
+# `__pycache__/` matches only a top-level `__pycache__` -- it never matched `app/core/__pycache__`
+# or `tests/unit/__pycache__`. The image audit measured the result: 24 nested `__pycache__`
+# directories inside /app and 73 `*.cpython-312-pytest-9.0.3.pyc` files, produced by a test run on
+# the developer's host and carried into a production image by `COPY . .`
+# (docs/security/audit/run-1/verification/containers/images/images.md, section 5b). Every pattern
+# below is therefore anchored with `**/` unless it genuinely only exists at the context root.
+
+# Virtualenv and byte-compiled output (the image builds its own venv at Dockerfile:9)
+.venv/
+**/__pycache__/
+**/*.py[cod]
+
+# Tool caches
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/htmlcov/
+**/.coverage
+coverage.xml
+
+# Secrets. `.env` sits at the context root, which is why the live vendor keys were verified
+# absent from the image; the recursive form costs nothing and survives a context move.
+.env
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Local data (uploads, qdrant storage)
+data/
+
+# Not in scope today -- the build context is `backend/`, so the repo's `.git` was never reachable.
+# The audit called that luck rather than policy: it breaks the moment a context moves up a level.
+.git/
+.gitignore
+
+# Agent tooling config. No `backend/.claude/` exists today; the frontend context had one and it
+# shipped inside the image, so the pattern is here pre-emptively rather than after the fact.
+.claude/

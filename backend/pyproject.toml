@@ -1,0 +1,126 @@
+[project]
+name = "cognify-backend"
+version = "0.1.0"
+# "self-hosted", not "local-first", which is the word this line carried before. The difference is
+# about defaults, not capability, and it is worth stating because both halves are true:
+#
+#   - As shipped, embedding is remote. `.env.example` sets LLM_EMBEDDING_PROVIDER=openai and
+#     `app/core/config.py:107` defaults to the same, with no base URL override, so the example
+#     configuration sends document text off the machine during ingestion. "local-first" overstates
+#     that configuration.
+#   - But `openai` names a wire dialect, not a host. `app/integrations/llm/embeddings.py:59`
+#     passes the resolved base URL straight into the embedding client, so LLM_OPENAI_BASE_URL (or
+#     the legacy LLM_BASE_URL hatch that `.env.example` documents for exactly this) can point it
+#     at a local embedder. `embedding_destination` (`embeddings.py:74`) exists to report that
+#     case, returning endpoint_is_default=False -- "the API dialect is still OpenAI's, but the
+#     operator, not OpenAI, chose the host".
+#
+# So "local-first" is true of some deployments and false of the shipped defaults, while
+# "self-hosted" is accurate for both. A package description should claim the one that always
+# holds.
+description = "CognifyAI backend - self-hosted Agentic RAG decision intelligence platform"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "qdrant-client>=1.13,<1.15",
+    "pypdf>=6.16.1",
+    "python-docx>=1.2.0",
+    "openpyxl>=3.1.5",
+    "python-multipart>=0.0.32",
+    "openai>=2.41.1",
+    "sse-starlette>=3.4.4",
+    # A RUNTIME dependency, not a dev one, and the distinction is the whole point. openpyxl
+    # imports `iterparse` from the stdlib unconditionally and overrides it only when defusedxml
+    # is importable (openpyxl/xml/functions.py). It was previously reachable only through the
+    # dev group, which CI installs and `uv sync --no-dev` excludes -- so every gate tested a
+    # hardened parser that the shipped image did not contain, verified by listing the image's
+    # own distributions. lxml does not cover this: it is present transitively via python-docx
+    # and hardens `fromstring`, but `iterparse` sits outside that branch, and `iterparse` is
+    # what reads xl/worksheets/sheet*.xml and xl/sharedStrings.xml -- the two most
+    # attacker-controlled parts of an upload.
+    "defusedxml>=0.7.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "coverage>=7.6",
+    "mypy>=1.14",
+    "pyright>=1.1.390",
+    "ruff>=0.9",
+    "bandit>=1.8",
+    "pip-audit>=2.7",
+    "vulture>=2.13",
+    "httpx>=0.28",
+    "types-openpyxl>=3.1.5.20260518",
+    "fpdf2>=2.8.7",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",      # pycodestyle
+    "F",           # pyflakes
+    "I",           # isort
+    "N",           # pep8-naming
+    "UP",          # pyupgrade
+    "B",           # bugbear
+    "C4",          # comprehensions
+    "SIM",         # simplify
+    "RUF",         # ruff-specific
+    "ASYNC",       # async pitfalls
+    "S",           # security (bandit-adjacent)
+    "DTZ",         # naive datetime
+    "PT",          # pytest style
+    "RET",         # return style
+    "T20",         # no print
+    "PLE", "PLW", "PLC",  # pylint errors/warnings/conventions
+    "ANN401",      # no explicit typing.Any in our annotations
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S106"]
+# Operator scripts are CLIs and print to the console intentionally.
+"scripts/**" = ["T20"]
+
+# Note: the pydantic mypy plugin is intentionally not enabled, and
+# disallow_any_explicit is enforced through Ruff's ANN401 instead: pydantic's
+# synthesized model members carry Any and would produce false positives on
+# every model class line. Our own code is kept Any-free by ANN401 plus
+# disallow_any_unimported below; pyright (strict) checks pydantic
+# constructors natively via dataclass_transform.
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_any_unimported = true
+warn_unreachable = true
+files = ["app", "tests", "alembic", "scripts", "evals"]
+
+# Names required by external-interface signatures (pydantic validators and the
+# Qdrant client surface) that are not read inside every stub/fake body.
+[tool.vulture]
+ignore_names = ["cls", "using", "with_payload"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+# SQLAlchemy drives async work through greenlets; without this, coverage silently
+# under-reports async service modules (some read ~50% while being exercised heavily).
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@overload",
+]

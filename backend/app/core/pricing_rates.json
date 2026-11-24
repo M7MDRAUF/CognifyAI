@@ -1,0 +1,48 @@
+{
+  "rate_table_version": "2026-09-22.2",
+  "currency": "USD",
+  "unit": "per_1m_tokens",
+  "note": "Published list prices, entered by hand and dated. A model absent from this file is reported unpriced, never zero -- see ADR-004. Every report that quotes a cost also quotes rate_table_version, so a figure can be reproduced against the rates that produced it.",
+  "sources": {
+    "deepseek/deepseek-flash": {
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "retrieved": "2026-09-22",
+      "effective": "2026-09-22",
+      "basis": "Peak cache-miss input and peak output rates, the highest the page lists for this model, so an estimate is an upper bound on what the vendor bills: off-peak rates are half, and cache-hit input is cheaper still. Page model version DeepSeek-V4.1-Flash; off-peak $0.15 input (cache miss), $0.003 (cache hit), $0.60 output.",
+      "decision": "D-1"
+    },
+    "deepseek/deepseek-v4-pro": {
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "retrieved": "2026-09-22",
+      "effective": "2026-09-22",
+      "basis": "Peak cache-miss input and peak output rates, the highest the page lists for this model, so an estimate is an upper bound on what the vendor bills: off-peak rates are half, and cache-hit input is cheaper still. Page model version DeepSeek-V4-Pro-0813; off-peak $0.66 input (cache miss), $0.022 (cache hit), $1.98 output.",
+      "decision": "D-1"
+    },
+    "deepseek/deepseek-chat": {
+      "url": null,
+      "retrieved": null,
+      "effective": "2026-09-22 (rate_table_version 2026-09-22.1)",
+      "basis": "Entered by P2-T09 before D-1 was taken. Not listed on the vendor's pricing page on 2026-09-22 and not a configured model; kept because the pricing unit tests exercise it, and never used to price a live run.",
+      "decision": null
+    },
+    "deepseek/deepseek-reasoner": {
+      "url": null,
+      "retrieved": null,
+      "effective": "2026-09-22 (rate_table_version 2026-09-22.1)",
+      "basis": "As deepseek-chat: entered before D-1, absent from the vendor's page on 2026-09-22, not a configured model.",
+      "decision": null
+    }
+  },
+  "rates": {
+    "deepseek": {
+      "deepseek-chat": { "prompt": 0.27, "completion": 1.1 },
+      "deepseek-reasoner": { "prompt": 0.55, "completion": 2.19 },
+      "deepseek-flash": { "prompt": 0.3, "completion": 1.2 },
+      "deepseek-v4-pro": { "prompt": 1.32, "completion": 3.96 }
+    },
+    "openai": {
+      "gpt-4o-mini": { "prompt": 0.15, "completion": 0.6 },
+      "gpt-4o": { "prompt": 2.5, "completion": 10.0 }
+    }
+  }
+}

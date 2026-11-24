@@ -1,0 +1,37 @@
+# Docker ignore patterns are not recursive: `node_modules/` matched only a top-level
+# `node_modules`, never a nested one. See the backend `.dockerignore` for the measured
+# consequence of the same mistake on that context
+# (docs/security/audit/run-1/verification/containers/images/images.md, section 5b).
+#
+# NOTE on the limits of this file. The runner stage is `COPY --from=builder /app ./`
+# (the last stage of frontend/Dockerfile), and `.dockerignore` does not apply to a stage-to-stage copy. The
+# patterns below therefore work in one direction only: they keep a path out of the BUILDER (whose
+# context copy at Dockerfile:9 they do govern), and a path the builder never received cannot
+# reach the runner. What they cannot touch is anything the builder acquired by other means --
+# above all the 824.8 MB dev+prod `node_modules` that arrives via `COPY --from=deps`
+# (Dockerfile:8) and then crosses into the runtime image whole. Pruning that needs a Dockerfile
+# change (a production-only install, or Next's standalone output), not a pattern here.
+
+# Dependencies (the deps stage installs its own)
+**/node_modules/
+
+# Build and test output
+.next/
+out/
+**/coverage/
+**/*.tsbuildinfo
+
+# Secrets
+.env
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Not reachable from this context today, excluded so it stays that way if the context moves.
+.git/
+.gitignore
+
+# Agent tooling config. `frontend/.claude/launch.json` was confirmed present at
+# `/app/.claude/launch.json` inside the runner image; it is local developer configuration and has
+# no business in a shipped image (images.md section 5d).
+.claude/

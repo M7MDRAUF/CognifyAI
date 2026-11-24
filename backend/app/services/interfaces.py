@@ -1,0 +1,53 @@
+"""Protocols that services depend on.
+
+Services receive these instead of concrete SQLAlchemy classes so business
+rules are unit-testable with in-memory fakes; the real repositories are
+exercised by integration tests against PostgreSQL.
+"""
+
+import uuid
+from collections.abc import Sequence
+from typing import Protocol
+
+from app.domain.models import Chunk, Document, Project
+from app.schemas.projects import ProjectStats
+
+
+class SupportsCommit(Protocol):
+    async def commit(self) -> None: ...
+
+    async def rollback(self) -> None: ...
+
+
+class ProjectRepositoryLike(Protocol):
+    async def add(self, project: Project) -> None: ...
+
+    async def list_all(self) -> list[Project]: ...
+
+    async def get(self, project_id: uuid.UUID) -> Project | None: ...
+
+    async def delete(self, project: Project) -> None: ...
+
+    async def stats(self, project_id: uuid.UUID) -> ProjectStats: ...
+
+
+class DocumentRepositoryLike(Protocol):
+    async def add(self, document: Document) -> None: ...
+
+    async def get(self, document_id: uuid.UUID) -> Document | None: ...
+
+    async def list_by_project(self, project_id: uuid.UUID) -> list[Document]: ...
+
+    async def delete(self, document: Document) -> None: ...
+
+    async def lock_project_storage(self, project_id: uuid.UUID) -> None: ...
+
+    async def total_size_bytes(self, project_id: uuid.UUID) -> int: ...
+
+
+class ChunkRepositoryLike(Protocol):
+    async def add_all(self, chunks: Sequence[Chunk]) -> None: ...
+
+    async def delete_by_document(self, document_id: uuid.UUID) -> None: ...
+
+    async def count_by_document(self, document_id: uuid.UUID) -> int: ...

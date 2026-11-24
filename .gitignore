@@ -1,0 +1,86 @@
+# ---------------------------------------------------------------------------
+# Secrets: never committed.
+# The DeepSeek API key (LLM_DEEPSEEK_API_KEY) and every other provider key live
+# only in local .env files. The .env.example files hold placeholders and stay.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+.live-secrets/
+*.secret
+*.key
+*.pem
+demo-env.json
+
+# ---------------------------------------------------------------------------
+# Documentation, plans and reports: kept out of the repository.
+# Architecture documents, implementation plans, execution ledgers, audit and
+# certification reports, registers, PRD/SDD and every other Markdown file.
+# ---------------------------------------------------------------------------
+*.md
+*.MD
+*_PLAN*
+*_LEDGER*
+*_REPORT*
+*_REGISTER*
+*_REGISTRY*
+docs/
+plans/
+reports/
+
+# ---------------------------------------------------------------------------
+# Everything outside the application itself
+# ---------------------------------------------------------------------------
+dataset/
+tools/
+evidence/
+backend/tests/
+backend/tests_live/
+backend/evals/
+backend/scripts/
+frontend/src/tests/
+frontend/e2e*/
+frontend/playwright*.config.ts
+frontend/vitest.config.ts
+graphify-out/
+*.jsonl
+
+# AI assistant and editor settings
+.claude/
+**/.claude/
+.superpowers/
+.mcp.json
+.vscode/
+.idea/
+AGENTS.md
+CLAUDE.md
+
+# ---------------------------------------------------------------------------
+# Runtime data and build output
+# ---------------------------------------------------------------------------
+/data/
+backend/data/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp

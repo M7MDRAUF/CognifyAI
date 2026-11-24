@@ -1,0 +1,89 @@
+name: cognify-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cognify
+      POSTGRES_PASSWORD: cognify
+      POSTGRES_DB: cognify
+    ports:
+      # Loopback only: the backend reaches this over the compose network by
+      # service name, and the host-run dev workflow connects on localhost.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cognify -d cognify"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    ports:
+      # Loopback only, as with postgres; Qdrant additionally runs with no API
+      # key, so this listener must not be reachable from another host.
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      # Container-network overrides; host-oriented values live in backend/.env.
+      DATABASE_URL: postgresql+asyncpg://cognify:cognify@postgres:5432/cognify
+      QDRANT_URL: http://qdrant:6333
+      UPLOAD_DIR: /data/uploads
+    ports:
+      # Loopback only, for the same reason as the datastores and a stronger one:
+      # every endpoint here is anonymous by design, and one of them spends real
+      # vendor credits. CORS restrains a browser, not `curl` from the LAN. The
+      # frontend container reaches this over the compose network by service
+      # name, so binding loopback costs nothing the deployment actually uses.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data/uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health',timeout=3).status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  frontend:
+    build: ./frontend
+    env_file: ./frontend/.env
+    ports:
+      # Loopback only, to match the rest of the stack. A single-operator,
+      # local-first deployment is served from the operator's own browser; if you
+      # deliberately want the UI on the LAN, change this line and the backend's
+      # together, because the browser talks to the backend directly.
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+# Redis is intentionally omitted: the MVP runs ingestion as in-process
+# background tasks (SDD allows Redis only if a job queue is introduced).

@@ -1,0 +1,1 @@
+"""CognifyAI backend application package."""
