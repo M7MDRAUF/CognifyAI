@@ -21,21 +21,25 @@ demo-env.json
 # ---------------------------------------------------------------------------
 *.md
 *.MD
-*_PLAN*
-*_LEDGER*
-*_REPORT*
-*_REGISTER*
-*_REGISTRY*
-docs/
-plans/
-reports/
+# The one exception: the project README at the repository root.
+!/README.md
+# Anchored to the repository root (a leading slash), so they can never hide a source file
+# such as backend/app/services/run_registry.py or the frontend's reports page.
+/*_PLAN*
+/*_LEDGER*
+/*_REPORT*
+/*_REGISTER*
+/*_REGISTRY*
+/docs/
+/plans/
+/reports/
 
 # ---------------------------------------------------------------------------
 # Everything outside the application itself
 # ---------------------------------------------------------------------------
-dataset/
-tools/
-evidence/
+/dataset/
+/tools/
+/evidence/
 backend/tests/
 backend/tests_live/
 backend/evals/
